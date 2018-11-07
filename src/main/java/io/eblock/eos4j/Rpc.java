@@ -425,4 +425,38 @@ public class Rpc {
 		tx.setExpiration(dateFormatter.format(new Date(1000 * Long.parseLong(tx.getExpiration().toString()))));
 		return pushTransaction("none", tx, new String[] { sign });
 	}
+	
+	//群聊天发送，没测试
+	public Transaction buyRam(String pk, String creator, String newAccount, Long buyRam) throws Exception {
+	   // get chain info
+	   ChainInfo info = getChainInfo();
+	   Block block = getBlock(info.getLastIrreversibleBlockNum().toString());
+	   // tx
+	   Tx tx = new Tx();
+	   tx.setExpiration(info.getHeadBlockTime().getTime() / 1000 + 60);
+	   tx.setRef_block_num(info.getLastIrreversibleBlockNum());
+	   tx.setRef_block_prefix(block.getRefBlockPrefix());
+	   tx.setNet_usage_words(0l);
+	   tx.setMax_cpu_usage_ms(0l);
+	   tx.setDelay_sec(0l);
+	   // actions
+	   List<TxAction> actions = new ArrayList<>();
+	   tx.setActions(actions);
+	   // buyrap
+	   Map<String, Object> buyMap = new LinkedHashMap<>();
+	   buyMap.put("payer", creator);
+	   buyMap.put("receiver", newAccount);
+	   buyMap.put("bytes", buyRam);
+	   TxAction buyAction = new TxAction(creator, "eosio", "buyrambytes", buyMap);
+	   actions.add(buyAction);
+	   // // sgin
+	   String sign = Ecc.signTransaction(pk, new TxSign(info.getChainId(), tx));
+	   // data parse
+	   String ramData = Ese.parseBuyRamData(creator, newAccount, buyRam);
+	   buyAction.setData(ramData);
+	   // reset expiration
+	   tx.setExpiration(dateFormatter.format(new Date(1000 * Long.parseLong(tx.getExpiration().toString()))));
+	   return pushTransaction("none", tx, new String[] { sign });
+	}
+	
 }
